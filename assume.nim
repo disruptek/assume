@@ -9,8 +9,12 @@ type
 
 proc isNil*(a: AssNode): bool {.borrow.}
 proc kind*(a: AssNode): NimNodeKind {.borrow.}
+proc treeRepr*(a: AssNode): string {.borrow.}
+proc repr*(a: AssNode): string {.borrow.}
 
 template badass(n: NodeLike; s: string): untyped =
+  if not n.isNil:
+    debugEcho treeRepr(n)
   raise AssError.newException:
     "bad assumption for $# node: $#" %
       [ if n.isNil: "nil" else: $n.kind, s ]
@@ -36,9 +40,6 @@ template bitch(item: untyped; body: untyped): untyped =
   else:
     body
 
-type
-  AnIdentDefs* = distinct AssNode
-
 proc `[]=`(a: var AssNode; index: int; value: NimNode) =
   ## unexported assignment borrow, basically
   bitch a:
@@ -57,21 +58,65 @@ proc add(a: var AssNode; value: NimNode) =
       discard NimNode(a).add value
 
 proc len*(a: AssNode): int =
+  ## find the length of a node
   bitch a:
     result = NimNode(a).len
 
 template borrows(t: typedesc) =
-  proc `[]`(a: t; index: int): NimNode {.borrow.}
-  proc `[]=`(a: var t; index: int; value: NimNode) {.borrow.}
-  proc add(a: var t; value: NimNode) {.borrow.}
+  proc `[]`(a: t; index: int): NimNode {.borrow, used.}
+  proc `[]=`(a: var t; index: int; value: NimNode) {.borrow, used.}
+  proc add(a: var t; value: NimNode) {.borrow, used.}
   proc len*(a: t): int {.borrow.}
+  proc treeRepr(a: t): string {.borrow, used.}
+  proc repr(a: t): string {.borrow, used.}
+
+type
+  AnIdentDefs* = distinct AssNode
+  AnVarSection* = distinct AssNode
+  AnLetSection* = distinct AssNode
 
 borrows AnIdentDefs
+borrows AnVarSection
+borrows AnLetSection
+
+template convertThingFrom(source: NimNode; body: untyped) {.dirty.} =
+  ## attempt an automatic conversion
+  if source.isNil:
+    n.badass "cowardly refusing to convert from nil"
+  else:
+    body
+  copyLineInfo(NimNode result, source)
+
+converter toAnLetSection*(n: NimNode): AnLetSection {.twoway.} =
+  convertThingFrom n:
+    case n.kind
+    of nnkVarSection:
+      result = AnLetSection: nnkLetSection.newNimNode n
+      for item in n.items:
+        result.add item
+    of nnkLetSection:
+      result = AnLetSection n
+    of nnkIdentDefs:
+      result = AnLetSection: nnkLetSection.newTree n
+    else:
+      n.badass "unimplemented"
+
+converter toAnVarSection*(n: NimNode): AnVarSection {.twoway.} =
+  convertThingFrom n:
+    case n.kind
+    of nnkLetSection:
+      result = AnVarSection: nnkVarSection.newNimNode n
+      for item in n.items:
+        result.add item
+    of nnkVarSection:
+      result = AnVarSection n
+    of nnkIdentDefs:
+      result = AnVarSection: nnkVarSection.newTree n
+    else:
+      n.badass "unimplemented"
 
 converter toAnIdentDefs*(n: NimNode): AnIdentDefs {.twoway.} =
-  if n.isNil:
-    n.badass "cowardly refusing to convert nil to IdentDefs"
-  else:
+  convertThingFrom n:
     case n.kind
     of nnkVarSection, nnkLetSection:
       case n.len
@@ -83,25 +128,36 @@ converter toAnIdentDefs*(n: NimNode): AnIdentDefs {.twoway.} =
     else:
       n.badass "unimplemented"
 
-  while result.len < 3:
-    result.add newEmptyNode()
-  result[1] =
-    if result[1].kind == nnkEmpty:
-      if result[2].kind == nnkEmpty:
-        n.badass "missing initialization needed for type inference"
+    while result.len < 3:
+      result.add newEmptyNode()
+    result[1] =
+      if result[1].kind == nnkEmpty:
+        if result[2].kind == nnkEmpty:
+          n.badass "missing initialization needed for type inference"
+        else:
+          getTypeImpl result[2]
       else:
-        getTypeImpl result[2]
-    else:
-      result[1]
+        result[1]
 
-iterator asIdentDefs*(n: AnIdentDefs): AnIdentDefs = yield n
+iterator asIdentDefs*(n: AnIdentDefs): AnIdentDefs =
+  ## iterate over the identdefs in an identdefs
+  yield n
+
+iterator asIdentDefs*(n: AnVarSection or AnLetSection): AnIdentDefs =
+  ## iterate over the identdefs in a var|let section
+  for defs in n.items:
+    for each in (toAnIdentDefs defs).asIdentDefs:
+      yield each
 
 iterator asIdentDefs*(n: NimNode): AnIdentDefs =
+  ## iterate over the identdefs in a rando node
   case n.kind
-  of nnkVarSection, nnkLetSection:
-    for defs in n.items:
-      for each in (toAnIdentDefs defs).asIdentDefs:
-        yield each
+  of nnkVarSection:
+    for each in (toAnVarSection n).asIdentDefs:
+      yield each
+  of nnkLetSection:
+    for each in (toAnLetSection n).asIdentDefs:
+      yield each
   of nnkIdentDefs:
     for each in (toAnIdentDefs n).asIdentDefs:
       yield each
