@@ -87,33 +87,8 @@ template convertThingFrom(source: NimNode; body: untyped) {.dirty.} =
     body
   copyLineInfo(NimNode result, source)
 
-converter toAnLetSection*(n: NimNode): AnLetSection {.twoway.} =
-  convertThingFrom n:
-    case n.kind
-    of nnkVarSection:
-      result = AnLetSection: nnkLetSection.newNimNode n
-      for item in n.items:
-        result.add item
-    of nnkLetSection:
-      result = AnLetSection n
-    of nnkIdentDefs:
-      result = AnLetSection: nnkLetSection.newTree n
-    else:
-      n.badass "unimplemented"
-
-converter toAnVarSection*(n: NimNode): AnVarSection {.twoway.} =
-  convertThingFrom n:
-    case n.kind
-    of nnkLetSection:
-      result = AnVarSection: nnkVarSection.newNimNode n
-      for item in n.items:
-        result.add item
-    of nnkVarSection:
-      result = AnVarSection n
-    of nnkIdentDefs:
-      result = AnVarSection: nnkVarSection.newTree n
-    else:
-      n.badass "unimplemented"
+proc add*(a: var AnLetSection | var AnVarSection; n: AnIdentDefs) =
+  NimNode(a).add n.NimNode
 
 converter toAnIdentDefs*(n: NimNode): AnIdentDefs {.twoway.} =
   convertThingFrom n:
@@ -138,6 +113,34 @@ converter toAnIdentDefs*(n: NimNode): AnIdentDefs {.twoway.} =
           getTypeImpl result[2]
       else:
         result[1]
+
+converter toAnLetSection*(n: NimNode): AnLetSection {.twoway.} =
+  convertThingFrom n:
+    case n.kind
+    of nnkVarSection:
+      result = AnLetSection: nnkLetSection.newNimNode n
+      for item in n.items:
+        result.add: item.toAnIdentDefs
+    of nnkLetSection:
+      result = AnLetSection n
+    of nnkIdentDefs:
+      result = AnLetSection: nnkLetSection.newTree n
+    else:
+      n.badass "unimplemented"
+
+converter toAnVarSection*(n: NimNode): AnVarSection {.twoway.} =
+  convertThingFrom n:
+    case n.kind
+    of nnkLetSection:
+      result = AnVarSection: nnkVarSection.newNimNode n
+      for item in n.items:
+        result.add: item.toAnIdentDefs
+    of nnkVarSection:
+      result = AnVarSection n
+    of nnkIdentDefs:
+      result = AnVarSection: nnkVarSection.newTree n
+    else:
+      n.badass "unimplemented"
 
 iterator asIdentDefs*(n: AnIdentDefs): AnIdentDefs =
   ## iterate over the identdefs in an identdefs
