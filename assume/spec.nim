@@ -58,3 +58,16 @@ proc isGenericOf*(n: NimNode; s: string): bool =
   if n.kind == nnkBracketExpr:
     if n.len > 0:
       return n[0].isType s
+
+type
+  NodeFilter* = proc(n: NimNode): NimNode
+
+proc filter*(n: NimNode; f: NodeFilter): NimNode =
+  ## rewrites a node and its children by passing each node to the filter;
+  ## if the filter yields nil, the node is simply copied.  otherwise, the
+  ## node is replaced.
+  result = f(n)
+  if result.isNil:
+    result = copyNimNode n
+    for kid in items(n):
+      result.add filter(kid, f)
