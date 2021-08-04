@@ -59,6 +59,37 @@ proc isGenericOf*(n: NimNode; s: string): bool =
     if n.len > 0:
       return n[0].isType s
 
+proc errorAst*(s: string, info: NimNode = nil): NimNode =
+  ## produce {.error: s.} in order to embed errors in the ast
+  ##
+  ## optionally take a node to set the error line information
+  result =
+    nnkPragma.newTree:
+      ident"error".newColonExpr: newLit s
+  if not info.isNil:
+    result[0].copyLineInfo info
+
+proc errorAst*(n: NimNode; s = "creepy ast"): NimNode =
+  ## embed an error with a message,
+  ## the line info is copied from the node
+  errorAst(s & ":\n" & treeRepr(n) & "\n", n)
+
+proc inject*(n: NimNode): NimNode =
+  ## sym -> sym {.inject.}   also handles identdefs, sections, idents, etc.
+  case n.kind
+  of nnkSym, nnkIdent:
+    nnkPragmaExpr.newTree n:
+      nnkPragma.newTree ident"inject"
+  of nnkIdentDefs:
+    nnkIdentDefs.newTree(inject n[0]).add n[1..^1]
+  of nnkVarSection, nnkLetSection:
+    if n.len != 1:
+      n.errorAst "gimme a section with a single variable"
+    else:
+      n.kind.newTree(inject n[0])
+  else:
+    n.errorAst "unsupported form for injection"
+
 type
   NodeFilter* = proc(n: NimNode): NimNode
 
