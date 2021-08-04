@@ -2,10 +2,8 @@ import std/strutils
 import std/genasts
 import std/macros
 
-type
-  AssError* = ValueError
-  AssNode = distinct NimNode
-  NodeLike = Assnode or NimNode
+import assume/spec
+export AssError, dot, eq, sq, colon
 
 proc isNil*(a: AssNode): bool {.borrow.}
 proc kind*(a: AssNode): NimNodeKind {.borrow.}
@@ -149,20 +147,20 @@ iterator asIdentDefs*(n: AnIdentDefs): AnIdentDefs =
 iterator asIdentDefs*(n: AnVarSection or AnLetSection): AnIdentDefs =
   ## iterate over the identdefs in a var|let section
   for defs in n.items:
-    for each in (toAnIdentDefs defs).asIdentDefs:
+    for each in defs.toAnIdentDefs.asIdentDefs:
       yield each
 
 iterator asIdentDefs*(n: NimNode): AnIdentDefs =
   ## iterate over the identdefs in a rando node
   case n.kind
   of nnkVarSection:
-    for each in (toAnVarSection n).asIdentDefs:
+    for each in n.toAnVarSection.asIdentDefs:
       yield each
   of nnkLetSection:
-    for each in (toAnLetSection n).asIdentDefs:
+    for each in n.toAnLetSection.asIdentDefs:
       yield each
   of nnkIdentDefs:
-    for each in (toAnIdentDefs n).asIdentDefs:
+    for each in n.toAnIdentDefs.asIdentDefs:
       yield each
   else:
     n.badass "unsupported for identdefs iteration"
