@@ -102,3 +102,52 @@ proc filter*(n: NimNode; f: NodeFilter): NimNode =
     result = copyNimNode n
     for kid in items(n):
       result.add filter(kid, f)
+
+macro enumValuesAsArray*(e: typed): untyped =
+  ## given an enum type, render an array of its symbol fields
+  nnkBracket.newNimNode(e).add:
+    e.getType[1][1..^1]
+
+macro enumValuesAsSet*(e: typed): untyped =
+  ## given an enum type, render a set of its symbol fields
+  nnkCurly.newNimNode(e).add:
+    e.getType[1][1..^1]
+
+macro enumValuesAsSetOfOrds*(e: typed): untyped =
+  ## given an enum type, render a set of its integer values
+  result = nnkCurly.newNimNode(e)
+  for n in 1 ..< e.getType[1].len:
+    result.add:
+      newLit e.getType[1][n].intVal
+
+macro enumValueAsString*(e: enum): string =
+  ## produce the literal enum value as opposed to its stringification
+  runnableExamples:
+    type E = enum One = "A", Two = "B"
+    assert One.enumValueAsString == "One"
+  for sym in (getTypeImpl e)[1..^1]:
+    if sym.intVal == e.intVal:
+      return newLit sym.strVal
+  error "unexpected"
+
+macro newTreeFrom*(kind: NimNodeKind; n: NimNode; body: untyped): NimNode =
+  ## use the kind and `n` node to create a new tree;
+  ## add the statements in the body and return this node
+  var tree = genSym(nskVar, "tree")
+  result = newStmtList:
+    newVarStmt tree:                           # var tree =
+      bindSym"newNimNode".newCall(kind, n)     # newNimNode(kind, n)
+  for child in body.items:                     # for child in body:
+    add result:
+      bindSym"add".newCall tree:               #   add tree:
+        child                                  #     child statement
+  add result:                                  # tree
+    tree
+
+proc desym*(n: NimNode): NimNode =
+  ## replace a symbol with an identifier of the same name
+  if not n.isNil and n.kind == nnkSym:
+    result = ident(repr n)  # use repr to properly desym genSym'd symbols
+    result.copyLineInfo n   # don't throw away line info!
+  else:
+    result = n
