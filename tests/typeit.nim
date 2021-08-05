@@ -125,3 +125,23 @@ suite "type iterator":
     type N = int
     typeIt N, {titNoAliases}:
       check $it == "int"
+
+  block:
+    ## ref object values
+    type R = ref object
+      x: int
+      y: float
+    var found: seq[string]
+    typeIt R(x: 4, y: 1.2), {}:
+      found.add $it
+    check found == @["4", "1.2"]
+
+  block:
+    ## ref object types
+    type R = ref object
+      x: int
+      y: float
+    var found: seq[string]
+    typeIt R, {}:
+      found.add $it
+    check found == @["int", "float"]

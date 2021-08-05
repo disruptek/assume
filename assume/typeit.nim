@@ -153,6 +153,9 @@ macro typeIt*(o: typed; options: static[set[titOption]];
   of nnkSym, nnkTupleTy, nnkObjectTy, nnkTupleConstr, nnkObjConstr:
     # the input is a value
     Values.iteration(o, getTypeImpl tipe)
+  of nnkRefTy:
+    # let iterate unwrap a reference value
+    Values.iteration(o, tipe)
   of nnkBracketExpr:
     # the input is a type
     Types.iteration(o, getTypeImpl tipe.last)
@@ -199,6 +202,13 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
   of nnkTupleTy, nnkTupleConstr:
     # looks like a tuple
     c.forTuple(o, o, body)
+  of nnkRefTy:
+    c.guardRefs tipe:
+      case c.mode
+      of Types:       # "deref" the type
+        c.iterate(getTypeImpl o, getTypeImpl tipe.last, body)
+      of Values:      # deref the value
+        c.iterate(newCall(ident"[]", o), getTypeImpl tipe.last, body)
   else:
     # looks like a primitive
     case c.mode
