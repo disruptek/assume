@@ -6,6 +6,8 @@ type
   titOption* = enum          ## type iteration options
     titNoParents = "ignore parent types via inheritance"
     titNoRefs    = "ignore reference types"
+    titNoAliases = "fully resolve type aliases"
+    titDistincts = "treat distinct types as opaque"
 
   Mode = enum Types, Values  ## felt cute might delete later idk
 
@@ -27,6 +29,13 @@ proc invoke(c: Context; body, input: NimNode): NimNode =
   nnkBlockStmt.newTree newEmptyNode():
     filter(body, swapIt)
 
+template guardRefs(c: Context; tipe: NimNode; body: untyped): untyped =
+  ## a guard against ref type output according to user's options
+  if titNoRefs notin c.options or tipe.kind != nnkRefTy:
+    body
+  else:
+    newEmptyNode()
+
 proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
   result = newStmtList()
@@ -41,14 +50,16 @@ proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
     # single definition
     of nnkIdentDefs:
       result.add:
-        c.invoke body: o.dot node[0]
+        c.guardRefs node[1]:
+          c.invoke body: o.dot node[0]
 
     # variant object
     of nnkRecCase:
-      if c.mode == Types:
+      case c.mode
+      of Types:
         result.add:
           o.errorAst "variant objects may not be iterated"
-      else:
+      of Values:
         # invoke the discriminator first, and then
         let kind = node[0][0]
         result.insert 0:
@@ -94,9 +105,9 @@ proc forObject(c: Context; o, tipe, body: NimNode): NimNode =
       result.add:
         c.forObject(o, getTypeImpl tipe.last, body)
   of nnkRefTy:
-    if titNoRefs notin c.options:
-      # unwrap a ref type modifier
-      result.add:
+    # unwrap a ref type modifier
+    result.add:
+      c.guardRefs getTypeImpl tipe.last:
         c.forObject(o, getTypeImpl tipe.last, body)
   of nnkObjectTy:
     # first see about traversing the parent object's fields
@@ -132,28 +143,56 @@ macro typeIt*(o: typed; options: static[set[titOption]];
   ## simple type, or the component parts of the type if it's a complex
   ## type.
 
+  template iteration(m: Mode; obj, tipe: untyped): untyped =
+    ## convenience
+    var c = Context(mode: m, options: options)
+    c.iterate(obj, tipe, body)
+
   let tipe = getTypeImpl o
-  result =
-    case tipe.kind
-    of nnkSym, nnkTupleTy, nnkObjectTy, nnkTupleConstr, nnkObjConstr:
-      # the input is a value
-      var c = Context(mode: Values, options: options)
-      c.iterate(o, tipe, body)
-    of nnkBracketExpr:
-      # the input is a type
-      var c = Context(mode: Types, options: options)
-      c.iterate(o, tipe.last, body)
+  case tipe.kind
+  of nnkSym, nnkTupleTy, nnkObjectTy, nnkTupleConstr, nnkObjConstr:
+    # the input is a value
+    Values.iteration(o, getTypeImpl tipe)
+  of nnkBracketExpr:
+    # the input is a type
+    Types.iteration(o, getTypeImpl tipe.last)
+  of nnkDistinctTy:
+    if titDistincts in options:
+      # leave distincts opaque
+      Types.iteration(o, getTypeImpl tipe[0])  # Types is good enough
     else:
-      # i dunno wtf the input is
-      o.errorAst "unexpected " & $tipe.kind
+      # unwrap distincts
+      case o.kind
+      of nnkConv:                                  # obviously, a value
+        if o.len != 2:
+          o.errorAst "unrecognized conversion ast"
+        else:
+          Values.iteration(o[1], getTypeImpl o[0])
+      else:
+        Types.iteration(o.last, o.last)            # must be a type
+  else:
+    # i dunno wtf the input is
+    o.errorAst "unexpected " & $tipe.kind
 
 proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
   ## entry point for iteration
-  let tipe = getTypeImpl tipe
   case tipe.kind
   of nnkDistinctTy:
-    # unwrap a distinct
-    newCall(bindSym"typeIt", newCall(tipe[0], o))
+    if titDistincts in c.options:
+      # treat distincts as opaque
+      c.invoke body: o
+    else:
+      # unwrap a distinct
+      let target =
+        case c.mode
+        of Types:
+          # target the original type
+          desym tipe.last   # nim bug: must desym
+        of Values:
+          # convert the value to the original type
+          newCall(tipe.last, o)
+      # issue a typeIt on the refined target
+      newCall(bindSym"typeIt", target, newLit c.options, body)
   of nnkObjectTy, nnkObjConstr:
     # looks like an object
     c.forObject(o, tipe, body)
@@ -162,4 +201,16 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
     c.forTuple(o, o, body)
   else:
     # looks like a primitive
-    c.invoke body: o
+    case c.mode
+    of Types:
+      var (o, tipe) = (o, tipe)
+      if titNoAliases in c.options:
+        # nim bug?  sameType doesn't seem to work for types 🙄
+        while o.repr != tipe.repr:
+          o = tipe
+          tipe = getType tipe
+      c.guardRefs tipe:
+        c.invoke body: desym o    # nim bug: must desym
+    of Values:
+      c.guardRefs tipe:
+        c.invoke body: o
