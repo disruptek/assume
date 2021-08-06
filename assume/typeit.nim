@@ -27,7 +27,8 @@ proc invoke(c: Context; body, input: NimNode): NimNode =
 
   # the result is the provided block with the `it` swapped
   nnkBlockStmt.newTree newEmptyNode():
-    filter(body, swapIt)
+    filter desym:
+      filter(swapIt, body)
 
 template guardRefs(c: Context; tipe: NimNode; body: untyped): untyped =
   ## a guard against ref type output according to user's options
