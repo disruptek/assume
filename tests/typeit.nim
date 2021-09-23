@@ -80,11 +80,10 @@ suite "type iterator":
 
   block:
     ## type inheritance
-    skip"case objects not yet supported":
-      var found: seq[string]
-      typeIt I, {}:
-        found.add $it
-      check found == @["true", "3.4", "false", "5.3"]
+    var found: seq[string]
+    typeIt I(m: true, y: 3.4, k: false, b: 5.3), {}:
+      found.add $it
+    check found == @["true", "3.4", "false", "5.3"]
 
   block:
     ## unwrapped distinct values
