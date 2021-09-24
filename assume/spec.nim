@@ -161,6 +161,20 @@ func sameType*(a, b: NimNode): bool =
   {.warning: "compiler bug workaround; see https://github.com/nim-lang/Nim/issues/18867".}
   macros.sameType(a, b) or macros.sameType(b, a)
 
+macro newTreeFrom*(kind: NimNodeKind; n: NimNode; body: untyped): NimNode =
+  ## use the kind and `n` node to create a new tree;
+  ## add the statements in the body and return this node
+  var tree = genSym(nskVar, "tree")
+  result = newStmtList:
+    newVarStmt tree:                           # var tree =
+      bindSym"newNimNode".newCall(kind, n)     # newNimNode(kind, n)
+  for child in body.items:                     # for child in body:
+    add result:
+      bindSym"add".newCall tree:               #   add tree:
+        child                                  #     child statement
+  add result:                                  # tree
+    tree
+
 macro enumValuesAsArray*(e: typed): untyped =
   ## given an enum type, render an array of its symbol fields
   nnkBracket.newNimNode(e).add:
@@ -183,24 +197,23 @@ macro enumValueAsString*(e: enum): string =
   runnableExamples:
     type E = enum One = "A", Two = "B"
     assert One.enumValueAsString == "One"
-  for sym in (getTypeImpl e)[1..^1]:
-    if sym.intVal == e.intVal:
-      return newLit sym.strVal
-  error "unexpected"
+    let e = One
+    assert e.enumValueAsString == "One"
 
-macro newTreeFrom*(kind: NimNodeKind; n: NimNode; body: untyped): NimNode =
-  ## use the kind and `n` node to create a new tree;
-  ## add the statements in the body and return this node
-  var tree = genSym(nskVar, "tree")
-  result = newStmtList:
-    newVarStmt tree:                           # var tree =
-      bindSym"newNimNode".newCall(kind, n)     # newNimNode(kind, n)
-  for child in body.items:                     # for child in body:
-    add result:
-      bindSym"add".newCall tree:               #   add tree:
-        child                                  #     child statement
-  add result:                                  # tree
-    tree
+  let ordinal = newCall(bindSym"ord", e)
+  result =
+    # case ord(e)
+    nnkCaseStmt.newTreeFrom e:
+      newCall(bindSym"ord", e)
+  for sym in (getTypeImpl e)[1..^1]:
+    # of 4: "Four"
+    result.add nnkOfBranch.newTree(newLit sym.intVal.int, newLit sym.strVal)
+  # else: raise ValueError.newException "bad data!"
+  result.add:
+    nnkElse.newTree:
+      nnkRaiseStmt.newTree:
+        newCall bindSym"ValueError".dot bindSym"newException":
+          newLit"enum holds invalid value for the type"
 
 proc desym*(n: NimNode): NimNode =
   ## replace a symbol with an identifier of the same name

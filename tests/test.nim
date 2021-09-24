@@ -7,6 +7,23 @@ import assume
 
 suite "assumptions are, like, great":
   block:
+    ## enumValueAsString on static values
+    type
+      E = enum
+        One = "A"
+        Two = "B"
+    check One.enumValueAsString == "One"
+
+  block:
+    ## enumValueAsString on runtime values
+    type
+      E = enum
+        One = "A"
+        Two = "B"
+    var one = One
+    check one.enumValueAsString == "One"
+
+  block:
     ## do a thing with var sections, let sections, identdefs
     macro goats(n: typed) =
       result = newStmtList()
