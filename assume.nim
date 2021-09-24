@@ -3,7 +3,7 @@ import std/genasts
 import std/macros
 
 import assume/spec
-export AssError, dot, eq, sq, colon
+export spec except NodeLike
 
 proc isNil*(a: AssNode): bool {.borrow.}
 proc kind*(a: AssNode): NimNodeKind {.borrow.}
