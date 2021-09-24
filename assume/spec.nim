@@ -112,11 +112,12 @@ proc filter*(f: NodeFilter; n: NimNode): NimNode =
 func applyLineInfo*(n, info: NimNode): NimNode =
   ## Produce a copy of `n` with line information from `info` applied to it and
   ## its children.
-  n.filter do (n: NimNode) -> NimNode:
-    result = copyNimNode(n)
-    result.copyLineInfo(info)
+  let pred = proc(n: NimNode): NimNode =
+    result = copyNimNode n
+    result.copyLineInfo info
     for c in n.items:
       result.add c.applyLineInfo(info)
+  result = filter(pred, n)
 
 func getTypeSkip*(n: NimNode, skip = Skippable): NimNode =
   ## Obtain the type of `n`, while skipping through type kinds matching `skip`.
