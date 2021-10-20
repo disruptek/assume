@@ -1,4 +1,4 @@
-import std/macros
+import std/macros except sameType
 
 import assume/spec
 
@@ -216,8 +216,7 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
     of Types:
       var (o, tipe) = (o, tipe)
       if titNoAliases in c.options:
-        # nim bug?  sameType doesn't seem to work for types 🙄
-        while o.repr != tipe.repr:
+        while not sameType(o, tipe):
           o = tipe
           tipe = getType tipe
       c.guardRefs tipe:
