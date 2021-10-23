@@ -1,0 +1,35 @@
+AssError	assume/spec.html#AssError	spec: AssError	
+AssNode	assume/spec.html#AssNode	spec: AssNode	
+NodeLike	assume/spec.html#NodeLike	spec: NodeLike	
+Skippable	assume/spec.html#Skippable	spec: Skippable	
+SkippableInst	assume/spec.html#SkippableInst	spec: SkippableInst	
+dot	assume/spec.html#dot.t,NimNode,NimNode	spec: dot(a, b: NimNode): NimNode	
+dot	assume/spec.html#dot.t,NimNode,string	spec: dot(a: NimNode; b: string): NimNode	
+eq	assume/spec.html#eq.t,NimNode,NimNode	spec: eq(a, b: NimNode): NimNode	
+eq	assume/spec.html#eq.t,string,NimNode	spec: eq(a: string; b: NimNode): NimNode	
+colon	assume/spec.html#colon.t,NimNode,NimNode	spec: colon(a, b: NimNode): NimNode	
+colon	assume/spec.html#colon.t,string,NimNode	spec: colon(a: string; b: NimNode): NimNode	
+colon	assume/spec.html#colon.t,,	spec: colon(a: string | NimNode; b: string | int): NimNode	
+sq	assume/spec.html#sq.t,NimNode	spec: sq(a: NimNode): NimNode	
+sq	assume/spec.html#sq.t,NimNode,NimNode	spec: sq(a, b: NimNode): NimNode	
+sq	assume/spec.html#sq.t,NimNode,SomeInteger	spec: sq(a: NimNode; b: SomeInteger)	
+isType	assume/spec.html#isType,NimNode	spec: isType(n: NimNode): bool	
+isType	assume/spec.html#isType,NimNode,string	spec: isType(n: NimNode; s: string): bool	
+isGenericOf	assume/spec.html#isGenericOf,NimNode,string	spec: isGenericOf(n: NimNode; s: string): bool	
+errorAst	assume/spec.html#errorAst,string,NimNode	spec: errorAst(s: string; info: NimNode = nil): NimNode	
+errorAst	assume/spec.html#errorAst,NimNode,string	spec: errorAst(n: NimNode; s = &quot;creepy ast&quot;): NimNode	
+inject	assume/spec.html#inject,NimNode	spec: inject(n: NimNode): NimNode	
+NodeFilter	assume/spec.html#NodeFilter	spec: NodeFilter	
+filter	assume/spec.html#filter,NodeFilter,NimNode	spec: filter(f: NodeFilter; n: NimNode): NimNode	
+applyLineInfo	assume/spec.html#applyLineInfo,NimNode,NimNode	spec: applyLineInfo(n, info: NimNode): NimNode	
+getTypeSkip	assume/spec.html#getTypeSkip,NimNode	spec: getTypeSkip(n: NimNode; skip = Skippable): NimNode	
+getTypeInstSkip	assume/spec.html#getTypeInstSkip,NimNode	spec: getTypeInstSkip(n: NimNode; skip = SkippableInst): NimNode	
+getTypeImplSkip	assume/spec.html#getTypeImplSkip,NimNode	spec: getTypeImplSkip(n: NimNode; skip = Skippable): NimNode	
+newTypedesc	assume/spec.html#newTypedesc,NimNode	spec: newTypedesc(n: NimNode): NimNode	
+sameType	assume/spec.html#sameType,NimNode,NimNode	spec: sameType(a, b: NimNode): bool	
+newTreeFrom	assume/spec.html#newTreeFrom.m,NimNodeKind,NimNode,untyped	spec: newTreeFrom(kind: NimNodeKind; n: NimNode; body: untyped): NimNode	
+enumValuesAsArray	assume/spec.html#enumValuesAsArray.m,typed	spec: enumValuesAsArray(e: typed): untyped	
+enumValuesAsSet	assume/spec.html#enumValuesAsSet.m,typed	spec: enumValuesAsSet(e: typed): untyped	
+enumValuesAsSetOfOrds	assume/spec.html#enumValuesAsSetOfOrds.m,typed	spec: enumValuesAsSetOfOrds(e: typed): untyped	
+enumValueAsString	assume/spec.html#enumValueAsString.m	spec: enumValueAsString(e: enum): string	
+desym	assume/spec.html#desym,NimNode	spec: desym(n: NimNode): NimNode	

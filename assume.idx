@@ -1,0 +1,21 @@
+isNil	assume.html#isNil,AssNode	assume: isNil(a: AssNode): bool	
+kind	assume.html#kind,AssNode	assume: kind(a: AssNode): NimNodeKind	
+treeRepr	assume.html#treeRepr,AssNode	assume: treeRepr(a: AssNode): string	
+repr	assume.html#repr,AssNode	assume: repr(a: AssNode): string	
+len	assume.html#len,AssNode	assume: len(a: AssNode): int	
+AnIdentDefs	assume.html#AnIdentDefs	assume: AnIdentDefs	
+AnVarSection	assume.html#AnVarSection	assume: AnVarSection	
+AnLetSection	assume.html#AnLetSection	assume: AnLetSection	
+len	assume.html#len,AnIdentDefs	assume: len(a`gensym22: AnIdentDefs): int	
+len	assume.html#len,AnVarSection	assume: len(a`gensym23: AnVarSection): int	
+len	assume.html#len,AnLetSection	assume: len(a`gensym24: AnLetSection): int	
+add	assume.html#add,,AnIdentDefs	assume: add(a: var AnLetSection | var AnVarSection; n: AnIdentDefs)	
+toAnIdentDefs	assume.html#toAnIdentDefs.c,NimNode	assume: toAnIdentDefs(n: NimNode): AnIdentDefs	
+fromAnIdentDefstoNimNode	assume.html#fromAnIdentDefstoNimNode.c,AnIdentDefs	assume: fromAnIdentDefstoNimNode(n`gensym36: AnIdentDefs): NimNode	
+toAnLetSection	assume.html#toAnLetSection.c,NimNode	assume: toAnLetSection(n: NimNode): AnLetSection	
+fromAnLetSectiontoNimNode	assume.html#fromAnLetSectiontoNimNode.c,AnLetSection	assume: fromAnLetSectiontoNimNode(n`gensym42: AnLetSection): NimNode	
+toAnVarSection	assume.html#toAnVarSection.c,NimNode	assume: toAnVarSection(n: NimNode): AnVarSection	
+fromAnVarSectiontoNimNode	assume.html#fromAnVarSectiontoNimNode.c,AnVarSection	assume: fromAnVarSectiontoNimNode(n`gensym48: AnVarSection): NimNode	
+asIdentDefs	assume.html#asIdentDefs.i,AnIdentDefs	assume: asIdentDefs(n: AnIdentDefs): AnIdentDefs	
+asIdentDefs	assume.html#asIdentDefs.i	assume: asIdentDefs(n: AnVarSection or AnLetSection): AnIdentDefs	
+asIdentDefs	assume.html#asIdentDefs.i,NimNode	assume: asIdentDefs(n: NimNode): AnIdentDefs	
