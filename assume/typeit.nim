@@ -282,8 +282,8 @@ macro typeIt*(o: typed; options: static[set[titOption]];
 
 macro isAccessible*(o: typed;): untyped =
   ## Given a statement whether a field is safe.
-  ## This is a runtime check and emits expression for all descriminators for a given field.
-  ## For non descriminated fields returns `true`.
+  ## This is a runtime check and emits expression for all discriminators for a given field.
+  ## For non discriminated fields returns `true`.
   if o.kind notin {nnkCheckedFieldExpr, nnkDotExpr}:
     error("'isAccessible only works with field dot expressions.", o)
   else:
@@ -348,4 +348,4 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
       c.guardRefs tipe:
         c.invoke body: o
     of Accessible:
-      o.errorAst("bad ast, ambigous what to do here")
+      o.errorAst("bad ast, ambiguous what to do here")
