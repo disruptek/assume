@@ -100,7 +100,7 @@ proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
       of Values:
         # invoke the discriminator first, and then
         let kind = node[0][0]
-        result.insert 0:
+        result.add:
           c.invoke body: o.dot kind
         if titAllFields in c.options:
           result.add allFieldCaseImpl(c, node, o, tipe, body)
