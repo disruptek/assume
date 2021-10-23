@@ -144,3 +144,56 @@ suite "type iterator":
     typeIt R, {}:
       found.add $it
     check found == @["int", "float"]
+
+  block:
+    ## typeit all fields
+    var 
+      i = I()
+      count = 0
+    typeit(i, {titAllFields}):
+      inc count
+    assert count == 6
+
+  block:
+    ## typeit all fields / isaccessible
+    var
+      p = P()
+      accessible = 0
+      fieldCount = 0
+      res: seq[string]
+    typeit(p, {titAllFields}):
+      if isAccessible(it):
+        inc accessible
+        res.add $it
+      inc fieldCount
+    check res == @["false", "0"]
+    check accessible == 2
+    check fieldCount == 3
+
+  block:
+    ## isAccessible object test
+    var o = O()
+    check isAccessible(o.n)
+    check isAccessible(o.s)
+    check isAccessible(o.rs)
+    check isAccessible(o.ro)
+  
+  block:
+    ## isAccessible variant test
+    var p = P()
+    check isAccessible(p.m)
+    check isAccessible(p.x)
+    check not isAccessible(p.y)
+    p = P(m: true)
+    check isAccessible(p.m)
+    check not isAccessible(p.x)
+    check isAccessible(p.y)
+
+  block:
+    ## isAccessible inheritance variant test
+    var i = I()
+    check isAccessible(i.m)
+    check isAccessible(i.k)
+    check not isAccessible(i.y)
+    check not isAccessible(i.a)
+    check isAccessible(i.b)
