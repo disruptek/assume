@@ -8,8 +8,10 @@ type
     titNoRefs    = "ignore reference types"
     titNoAliases = "fully resolve type aliases"
     titDistincts = "treat distinct types as opaque"
+    titAllFields = "iterates over all fields"
+    titDeclaredOrder = "iterates fields in order of declaration"
 
-  Mode = enum Types, Values  ## felt cute might delete later idk
+  Mode = enum Types, Values, Accessible  ## felt cute might delete later idk
 
   Context = object           ## just carries options around
     mode: Mode
@@ -37,6 +39,42 @@ template guardRefs(c: Context; tipe: NimNode; body: untyped): untyped =
   else:
     newEmptyNode()
 
+proc eachField(c: Context; o, tipe, body: NimNode): NimNode
+proc canAccessField(o, tipe, field, conds: NimNode): NimNode
+
+proc allFieldCaseImpl(c: Context; node, o, tipe, body: NimNode): NimNode =
+  result = newStmtList()
+  for branch in node[1 .. ^1]:                # skip discriminator
+    case branch.kind
+    of nnkOfBranch:
+      result.add: # add all fields to the statement
+        c.eachField(o, branch.last, body)
+    of nnkElse:
+      result.add: # Add else fields
+        c.eachField(o, branch.last, body)
+    else:
+      result.add:
+        node.errorAst "unrecognized ast"
+
+proc safeFieldCaseImpl(c: Context; node, o, tipe, body: NimNode): NimNode =
+  # add a case statement to invoke the proper branches.
+  result = nnkCaseStmt.newTree(o.dot node[0][0])
+  for branch in node[1 .. ^1]:                # skip discriminator
+    let clone = copyNimNode branch
+    case branch.kind
+    of nnkOfBranch:
+      for expr in branch[0 .. ^2]:
+        clone.add expr
+      clone.add:
+        c.eachField(o, branch.last, body)
+    of nnkElse:
+      clone.add:
+        c.eachField(o, branch.last, body)
+    else:
+      result.add:
+        node.errorAst "unrecognized ast"
+    result.add clone
+
 proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
   result = newStmtList()
@@ -63,32 +101,85 @@ proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
       of Values:
         # invoke the discriminator first, and then
         let kind = node[0][0]
-        result.insert 0:
-          c.invoke body: o.dot kind
-
-        # add a case statement to invoke the proper branches.
-        let kase = nnkCaseStmt.newTree(o.dot kind)
-        for branch in node[1 .. ^1]:                # skip discriminator
-          let clone = copyNimNode branch
-          case branch.kind
-          of nnkOfBranch:
-            for expr in branch[0 .. ^2]:
-              clone.add expr
-            clone.add:
-              c.eachField(o, branch.last, body)
-          of nnkElse:
-            clone.add:
-              c.eachField(o, branch.last, body)
-          else:
-            result.add:
-              node.errorAst "unrecognized ast"
-          kase.add clone
-        result.add kase
-
+        if titDeclaredOrder in c.options:
+          result.add:
+            c.invoke body: o.dot kind
+        else:
+          result.insert 0:
+            c.invoke body: o.dot kind
+        if titAllFields in c.options:
+          result.add allFieldCaseImpl(c, node, o, tipe, body)
+        else:
+          result.add safeFieldCaseImpl(c, node, o, tipe, body)
+      of Accessible: assert false
     else:
       # it's a tuple; invoke on each field by index
       result.add:
         c.invoke body: o.sq index
+
+proc canAccessField(o, tipe, field, conds: NimNode): NimNode =
+  ## iterates over the `tipe` returning the required conditions
+  ## to be true for safe access of `field`
+  template setResult(val: NimNode) =
+    if result.kind == nnkNilLit:
+      result = val
+
+  for index, node in tipe.pairs:
+    case node.kind
+
+    # normal object field list
+    of nnkRecList:
+      setResult canAccessField(o, node, field, conds)
+
+    # single definition
+    of nnkIdentDefs:
+      for x in node[0..^3]:
+        if x == field:
+          setResult conds
+
+    # variant object
+    of nnkRecCase:
+      let kind = node[0][0]
+      if kind == field:
+        setResult conds
+      var branchConds: seq[NimNode]
+      for branch in node[1 .. ^1]:
+        case branch.kind
+        of nnkOfBranch:
+          var cond = conds.copyNimTree()
+          for expr in branch[0 .. ^2]:
+            # Add all conditions for this branch
+            cond = # Old conditions go on left to cull statements early
+              case expr.kind
+              of nnkCurly: # It's a set check if value is in set
+                infix(cond, "and", newCall("contains", expr, o.dot kind))
+              of nnkRange:
+                let rangee = infix(expr[0], "..", expr[1]) # Convert the range type to slice
+                infix(cond, "and", newCall("contains", rangee, o.dot kind))
+              else: # if it's a single value compare
+                infix(cond, "and", infix(o.dot kind, "==", expr))
+
+          setResult canAccessField(o, branch[^1], field, cond)
+          branchConds.add cond
+
+        of nnkElse:
+          let accessCond = block: 
+            # Grab all branches and or them to together,
+            # then invert them ie: `not(a or b)`
+            var res =
+              if branchConds.len > 0:
+                branchConds[0]
+              else:
+                conds
+            for i, x in branchConds.pairs:
+              if i > 0:
+                res = infix(res, "or", x)
+            res = prefix(res, "not")
+            infix(conds, "and", res)
+
+          setResult canAccessField(o, node[^1], field, accessCond)
+        else: discard
+    else: discard
 
 proc forTuple(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
@@ -97,22 +188,32 @@ proc forTuple(c: Context; o, tipe, body: NimNode): NimNode =
 proc forObject(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
   result = newStmtList()
+
+  template addResult(val: NimNode) = 
+    if c.mode == Accessible:
+      if result.kind in {nnkNilLit, nnkStmtList}:
+        # Only replace if nil or stmtlist,
+        # this allows the multiple inherited fields to work
+        result = val
+    else:
+      result.add val
+
   case tipe.kind
   of nnkEmpty:
     discard
   of nnkOfInherit:
     if titNoParents notin c.options:
       # we need to traverse the parent object type's fields
-      result.add:
+      addResult:
         c.forObject(o, getTypeImpl tipe.last, body)
   of nnkRefTy:
     # unwrap a ref type modifier
-    result.add:
+    addResult:
       c.guardRefs getTypeImpl tipe.last:
         c.forObject(o, getTypeImpl tipe.last, body)
   of nnkObjectTy:
     # first see about traversing the parent object's fields
-    result.add:
+    addResult:
       c.forObject(o, tipe[1], body)
 
     # now we can traverse the records in this object
@@ -121,8 +222,14 @@ proc forObject(c: Context; o, tipe, body: NimNode): NimNode =
     of nnkEmpty:
       discard
     of nnkRecList:
-      result.add:
-        c.eachField(o, records, body)
+      case c.mode
+      of Types, Values:
+        result.add:
+          c.eachField(o, records, body)
+      of Accessible:
+        let res = canAccessField(o, records, body, newLit(true)) # Nim Vm bug
+        addResult(res)
+
     else:
       result.add:
         tipe.errorAst "unrecognized object type ast"
@@ -178,6 +285,26 @@ macro typeIt*(o: typed; options: static[set[titOption]];
     # i dunno wtf the input is
     o.errorAst "unexpected " & $tipe.kind
 
+macro isAccessible*(o: typed;): untyped =
+  ## Given a statement whether a field is safe.
+  ## This is a runtime check and emits expression for all discriminators for a given field.
+  ## For non discriminated fields returns `true`.
+  if o.kind notin {nnkCheckedFieldExpr, nnkDotExpr}:
+    error("'isAccessible only works with field dot expressions.", o)
+  else:
+    var
+      obj = o[0]
+      field = o[1]
+    case o.kind
+    of nnkCheckedFieldExpr:
+      field = obj[1]
+      obj = obj[0]
+    else: discard
+
+    let tipe = getTypeImpl obj
+    var c = Context(mode: Accessible)
+    result = c.iterate(obj, tipe, field)
+
 proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
   ## entry point for iteration
   case tipe.kind
@@ -187,16 +314,17 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
       c.invoke body: o
     else:
       # unwrap a distinct
-      let target =
-        case c.mode
-        of Types:
-          # target the original type
-          desym tipe.last   # nim bug: must desym
-        of Values:
-          # convert the value to the original type
-          newCall(tipe.last, o)
-      # issue a typeIt on the refined target
-      newCall(bindSym"typeIt", target, newLit c.options, body)
+      case c.mode
+      of Types, Values:
+        let target =
+          if c.mode == Types:
+            desym tipe.last   # nim bug: must desym
+          else:
+            newCall(tipe.last, o)
+        newCall(bindSym"typeIt", target, newLit c.options, body)
+      of Accessible:
+        let target = newCall(tipe.last, o)
+        newCall(bindSym"isAccessible", target, body)
   of nnkObjectTy, nnkObjConstr:
     # looks like an object
     c.forObject(o, tipe, body)
@@ -206,7 +334,7 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
   of nnkRefTy:
     c.guardRefs tipe:
       case c.mode
-      of Types:       # "deref" the type
+      of Types, Accessible:       # "deref" the type
         c.iterate(getTypeImpl o, getTypeImpl tipe.last, body)
       of Values:      # deref the value
         c.iterate(newCall(ident"[]", o), getTypeImpl tipe.last, body)
@@ -224,3 +352,5 @@ proc iterate(c: Context; o, tipe, body: NimNode): NimNode =
     of Values:
       c.guardRefs tipe:
         c.invoke body: o
+    of Accessible:
+      o.errorAst("bad ast, ambiguous what to do here")
