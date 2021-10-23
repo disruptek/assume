@@ -9,6 +9,7 @@ type
     titNoAliases = "fully resolve type aliases"
     titDistincts = "treat distinct types as opaque"
     titAllFields = "iterates over all fields"
+    titDeclaredOrder = "iterates fields in order of declaration"
 
   Mode = enum Types, Values, Accessible  ## felt cute might delete later idk
 
@@ -100,8 +101,12 @@ proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
       of Values:
         # invoke the discriminator first, and then
         let kind = node[0][0]
-        result.add:
-          c.invoke body: o.dot kind
+        if titDeclaredOrder in c.options:
+          result.add:
+            c.invoke body: o.dot kind
+        else:
+          result.insert 0:
+            c.invoke body: o.dot kind
         if titAllFields in c.options:
           result.add allFieldCaseImpl(c, node, o, tipe, body)
         else:
