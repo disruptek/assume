@@ -97,7 +97,7 @@ proc inject*(n: NimNode): NimNode =
     n.errorAst "unsupported form for injection"
 
 type
-  NodeFilter* = proc(n: NimNode): NimNode
+  NodeFilter* = proc(n: NimNode): NimNode {.noSideEffect.}
 
 func filter*(f: NodeFilter; n: NimNode): NimNode =
   ## rewrites a node and its children by passing each node to the filter;
@@ -112,7 +112,7 @@ func filter*(f: NodeFilter; n: NimNode): NimNode =
 func applyLineInfo*(n, info: NimNode): NimNode =
   ## Produce a copy of `n` with line information from `info` applied to it and
   ## its children.
-  let pred = proc(n: NimNode): NimNode =
+  let pred = func(n: NimNode): NimNode =
     result = copyNimNode n
     result.copyLineInfo info
     for c in n.items:
