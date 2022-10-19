@@ -99,7 +99,7 @@ proc inject*(n: NimNode): NimNode =
 type
   NodeFilter* = proc(n: NimNode): NimNode
 
-proc filter*(f: NodeFilter; n: NimNode): NimNode =
+func filter*(f: NodeFilter; n: NimNode): NimNode =
   ## rewrites a node and its children by passing each node to the filter;
   ## if the filter yields nil, the node is simply copied.  otherwise, the
   ## node is replaced.
