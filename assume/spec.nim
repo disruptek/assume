@@ -201,7 +201,6 @@ macro enumValueAsString*(e: enum): string =
     let e = One
     assert e.enumValueAsString == "One"
 
-  let ordinal = newCall(bindSym"ord", e)
   result =
     # case ord(e)
     nnkCaseStmt.newTreeFrom e:
