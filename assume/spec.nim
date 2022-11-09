@@ -222,3 +222,7 @@ proc desym*(n: NimNode): NimNode =
     result.copyLineInfo n   # don't throw away line info!
   else:
     result = n
+
+proc tupleTypeArity*(n: NimNode): int =
+  ## provide a typedesc or an instance to recover the tuple's arity
+  getTypeImpl(n).len
