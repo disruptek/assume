@@ -45,10 +45,15 @@ jobs:
           path: nim
           version: ${{ matrix.nim }}
 
-      - name: Run tests
+      - name: Install Valgrind
+        if: ${{ matrix.os }} == 'ubuntu-latest'
         shell: bash
         run: |
           sudo apt install valgrind
+
+      - name: Run tests
+        shell: bash
+        run: |
           cd ci
           nimble --accept develop
           nimble --accept install "https://github.com/disruptek/balls"
