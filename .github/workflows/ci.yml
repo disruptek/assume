@@ -48,6 +48,7 @@ jobs:
       - name: Run tests
         shell: bash
         run: |
+          sudo apt install valgrind
           cd ci
           nimble --accept develop
           nimble --accept install "https://github.com/disruptek/balls"
