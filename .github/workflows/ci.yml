@@ -46,7 +46,7 @@ jobs:
           version: ${{ matrix.nim }}
 
       - name: Install Valgrind
-        if: ${{ matrix.os }} == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
           sudo apt install valgrind
