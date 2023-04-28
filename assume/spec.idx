@@ -1,0 +1,43 @@
+nimTitle	spec	assume/spec.html	module assume/spec		0
+nim	AssError	assume/spec.html#AssError	type AssError		4
+nim	AssNode	assume/spec.html#AssNode	type AssNode		5
+nim	NodeLike	assume/spec.html#NodeLike	type NodeLike		6
+nim	Skippable	assume/spec.html#Skippable	const Skippable		9
+nim	SkippableInst	assume/spec.html#SkippableInst	const SkippableInst		11
+nim	dot	assume/spec.html#dot.t,NimNode,NimNode	template dot(a, b: NimNode): NimNode		14
+nim	dot	assume/spec.html#dot.t,NimNode,string	template dot(a: NimNode; b: string): NimNode		18
+nim	eq	assume/spec.html#eq.t,NimNode,NimNode	template eq(a, b: NimNode): NimNode		22
+nim	eq	assume/spec.html#eq.t,string,NimNode	template eq(a: string; b: NimNode): NimNode		26
+nim	colon	assume/spec.html#colon.t,NimNode,NimNode	template colon(a, b: NimNode): NimNode		30
+nim	colon	assume/spec.html#colon.t,string,NimNode	template colon(a: string; b: NimNode): NimNode		34
+nim	colon	assume/spec.html#colon.t,,	template colon(a: string | NimNode; b: string | int): NimNode		38
+nim	sq	assume/spec.html#sq.t,NimNode	template sq(a: NimNode): NimNode		42
+nim	sq	assume/spec.html#sq.t,NimNode,NimNode	template sq(a, b: NimNode): NimNode		46
+nim	sq	assume/spec.html#sq.t,NimNode,SomeInteger	template sq(a: NimNode; b: SomeInteger)		50
+nim	isType	assume/spec.html#isType,NimNode	proc isType(n: NimNode): bool		54
+nim	isType	assume/spec.html#isType,NimNode,string	proc isType(n: NimNode; s: string): bool		58
+nim	isGenericOf	assume/spec.html#isGenericOf,NimNode,string	proc isGenericOf(n: NimNode; s: string): bool		62
+nim	errorAst	assume/spec.html#errorAst,string,NimNode	proc errorAst(s: string; info: NimNode = nil): NimNode		68
+nim	errorAst	assume/spec.html#errorAst,NimNode,string	proc errorAst(n: NimNode; s = "creepy ast"): NimNode		78
+nim	inject	assume/spec.html#inject,NimNode	proc inject(n: NimNode): NimNode		83
+nim	NodeFilter	assume/spec.html#NodeFilter	type NodeFilter		100
+nim	filter	assume/spec.html#filter,NodeFilter,NimNode	proc filter(f: NodeFilter; n: NimNode): NimNode		102
+nim	applyLineInfo	assume/spec.html#applyLineInfo,NimNode,NimNode	proc applyLineInfo(n, info: NimNode): NimNode		112
+nim	getTypeSkip	assume/spec.html#getTypeSkip,NimNode	proc getTypeSkip(n: NimNode; skip = Skippable): NimNode		122
+nim	getTypeInstSkip	assume/spec.html#getTypeInstSkip,NimNode	proc getTypeInstSkip(n: NimNode; skip = SkippableInst): NimNode		137
+nim	getTypeImplSkip	assume/spec.html#getTypeImplSkip,NimNode	proc getTypeImplSkip(n: NimNode; skip = Skippable): NimNode		150
+nim	newTypedesc	assume/spec.html#newTypedesc,NimNode	proc newTypedesc(n: NimNode): NimNode		156
+nim	sameType	assume/spec.html#sameType,NimNode,NimNode	proc sameType(a, b: NimNode): bool		160
+nim	newTreeFrom	assume/spec.html#newTreeFrom.m,NimNodeKind,NimNode,untyped	macro newTreeFrom(kind: NimNodeKind; n: NimNode; body: untyped): NimNode		165
+nim	enumValuesAsArray	assume/spec.html#enumValuesAsArray.m,typed	macro enumValuesAsArray(e: typed): untyped		179
+nim	enumValuesAsSet	assume/spec.html#enumValuesAsSet.m,typed	macro enumValuesAsSet(e: typed): untyped		184
+nim	enumValuesAsSetOfOrds	assume/spec.html#enumValuesAsSetOfOrds.m,typed	macro enumValuesAsSetOfOrds(e: typed): untyped		189
+nim	enumValueAsString	assume/spec.html#enumValueAsString.m	macro enumValueAsString(e: enum): string		196
+nim	desym	assume/spec.html#desym,NimNode	proc desym(n: NimNode): NimNode		218
+nim	tupleTypeArity	assume/spec.html#tupleTypeArity,NimNode	proc tupleTypeArity(n: NimNode): int		226
+nimgrp	istype	assume/spec.html#isType-procs-all	proc		54
+nimgrp	errorast	assume/spec.html#errorAst-procs-all	proc		68
+nimgrp	colon	assume/spec.html#colon-templates-all	template		30
+nimgrp	eq	assume/spec.html#eq-templates-all	template		22
+nimgrp	dot	assume/spec.html#dot-templates-all	template		14
+nimgrp	sq	assume/spec.html#sq-templates-all	template		42

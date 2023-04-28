@@ -1,0 +1,24 @@
+nimTitle	assume	assume.html	module assume		0
+nim	isNil	assume.html#isNil,AssNode	proc isNil(a: AssNode): bool		8
+nim	kind	assume.html#kind,AssNode	proc kind(a: AssNode): NimNodeKind		9
+nim	treeRepr	assume.html#treeRepr,AssNode	proc treeRepr(a: AssNode): string		10
+nim	repr	assume.html#repr,AssNode	proc repr(a: AssNode): string		11
+nim	len	assume.html#len,AssNode	proc len(a: AssNode): int		58
+nim	AnIdentDefs	assume.html#AnIdentDefs	type AnIdentDefs		72
+nim	AnVarSection	assume.html#AnVarSection	type AnVarSection		73
+nim	AnLetSection	assume.html#AnLetSection	type AnLetSection		74
+nim	len	assume.html#len,AnIdentDefs	proc len(a`gensym22: AnIdentDefs): int		67
+nim	len	assume.html#len,AnVarSection	proc len(a`gensym23: AnVarSection): int		67
+nim	len	assume.html#len,AnLetSection	proc len(a`gensym24: AnLetSection): int		67
+nim	add	assume.html#add,,AnIdentDefs	proc add(a: var AnLetSection | var AnVarSection; n: AnIdentDefs)		88
+nim	toAnIdentDefs	assume.html#toAnIdentDefs.c,NimNode	converter toAnIdentDefs(n: NimNode): AnIdentDefs		91
+nim	fromAnIdentDefstoNimNode	assume.html#fromAnIdentDefstoNimNode.c,AnIdentDefs	converter fromAnIdentDefstoNimNode(n`gensym36: AnIdentDefs): NimNode		91
+nim	toAnLetSection	assume.html#toAnLetSection.c,NimNode	converter toAnLetSection(n: NimNode): AnLetSection		115
+nim	fromAnLetSectiontoNimNode	assume.html#fromAnLetSectiontoNimNode.c,AnLetSection	converter fromAnLetSectiontoNimNode(n`gensym42: AnLetSection): NimNode		115
+nim	toAnVarSection	assume.html#toAnVarSection.c,NimNode	converter toAnVarSection(n: NimNode): AnVarSection		129
+nim	fromAnVarSectiontoNimNode	assume.html#fromAnVarSectiontoNimNode.c,AnVarSection	converter fromAnVarSectiontoNimNode(n`gensym48: AnVarSection): NimNode		129
+nim	asIdentDefs	assume.html#asIdentDefs.i,AnIdentDefs	iterator asIdentDefs(n: AnIdentDefs): AnIdentDefs		143
+nim	asIdentDefs	assume.html#asIdentDefs.i	iterator asIdentDefs(n: AnVarSection or AnLetSection): AnIdentDefs		147
+nim	asIdentDefs	assume.html#asIdentDefs.i,NimNode	iterator asIdentDefs(n: NimNode): AnIdentDefs		153
+nimgrp	len	assume.html#len-procs-all	proc		58
+nimgrp	asidentdefs	assume.html#asIdentDefs-iterators-all	iterator		143
