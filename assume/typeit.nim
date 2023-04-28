@@ -78,6 +78,13 @@ proc safeFieldCaseImpl(c: Context; node, o, tipe, body: NimNode): NimNode =
 proc eachField(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
   result = newStmtList()
+
+  let tipe = # If the ident def is the same line in a variant add a parent node
+    if tipe.kind == nnkIdentDefs:
+      newStmtList(tipe)
+    else:
+      tipe
+
   for index, node in tipe.pairs:
     case node.kind
 
@@ -163,7 +170,7 @@ proc canAccessField(o, tipe, field, conds: NimNode): NimNode =
           branchConds.add cond
 
         of nnkElse:
-          let accessCond = block: 
+          let accessCond = block:
             # Grab all branches and or them to together,
             # then invert them ie: `not(a or b)`
             var res =
@@ -189,7 +196,7 @@ proc forObject(c: Context; o, tipe, body: NimNode): NimNode =
   ## invoke for each field in `tipe`
   result = newStmtList()
 
-  template addResult(val: NimNode) = 
+  template addResult(val: NimNode) =
     if c.mode == Accessible:
       if result.kind in {nnkNilLit, nnkStmtList}:
         # Only replace if nil or stmtlist,
@@ -250,7 +257,6 @@ macro typeIt*(o: typed; options: static[set[titOption]];
   ## If it's a type, `it` in the body will represent the type if it's a
   ## simple type, or the component parts of the type if it's a complex
   ## type.
-
   template iteration(m: Mode; obj, tipe: untyped): untyped =
     ## convenience
     var c = Context(mode: m, options: options)

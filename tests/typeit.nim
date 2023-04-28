@@ -199,4 +199,17 @@ proc main =
       check not isAccessible(i.a)
       check isAccessible(i.b)
 
+    block:
+      ## Ensure same line fields inside variants work
+      type A = object
+        case b: bool
+        of true: f: float
+        else: discard
+      var a = A()
+      typeIt(a, {titAllFields}):
+        when it is bool:
+          check astToStr(it) == "a.b"
+        elif it is float:
+          check astToStr(it) == "a.f"
+
 main()

@@ -1,4 +1,4 @@
-version = "0.6.0"
+version = "0.7.0"
 author = "disruptek"
 description = "assume makes an ass out of u and me"
 license = "MIT"
