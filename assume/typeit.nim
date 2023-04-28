@@ -131,6 +131,12 @@ proc canAccessField(o, tipe, field, conds: NimNode): NimNode =
     if result.kind == nnkNilLit:
       result = val
 
+  let tipe =
+      if tipe.kind == nnkIdentDefs:
+        newStmtList(tipe)
+      else:
+        tipe
+
   for index, node in tipe.pairs:
     case node.kind
 
@@ -153,19 +159,26 @@ proc canAccessField(o, tipe, field, conds: NimNode): NimNode =
       for branch in node[1 .. ^1]:
         case branch.kind
         of nnkOfBranch:
-          var cond = conds.copyNimTree()
+          var cond: NimNode
           for expr in branch[0 .. ^2]:
             # Add all conditions for this branch
-            cond = # Old conditions go on left to cull statements early
+            let branchDescrim =
               case expr.kind
               of nnkCurly: # It's a set check if value is in set
-                infix(cond, "and", newCall("contains", expr, o.dot kind))
+                newCall("contains", expr, o.dot kind)
               of nnkRange:
                 let rangee = infix(expr[0], "..", expr[1]) # Convert the range type to slice
-                infix(cond, "and", newCall("contains", rangee, o.dot kind))
+                newCall("contains", rangee, o.dot kind)
               else: # if it's a single value compare
-                infix(cond, "and", infix(o.dot kind, "==", expr))
+                infix(o.dot kind, "==", expr)
 
+            cond =
+              if cond.kind == nnkNilLit:
+                branchDescrim
+              else:
+                infix(cond, "or", branchDescrim)
+
+          cond = infix(conds.copyNimTree(), "and", cond)
           setResult canAccessField(o, branch[^1], field, cond)
           branchConds.add cond
 

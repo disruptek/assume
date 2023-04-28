@@ -1,4 +1,4 @@
-import std/macros
+import std/[macros, pegs]
 
 import balls
 
@@ -211,5 +211,16 @@ proc main =
           check astToStr(it) == "a.b"
         elif it is float:
           check astToStr(it) == "a.f"
+
+    block:
+      ## std/pegs does a bunch of funky stuff
+      var
+        a = peg"hello"
+        accessible: seq[string]
+      typeit(a, {titAllFields, titDeclaredOrder}):
+        if it.isAccessible:
+          accessible.add astToStr(it)
+      check accessible == @["a.kind", "a.term"]
+
 
 main()
